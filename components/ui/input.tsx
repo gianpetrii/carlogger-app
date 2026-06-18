@@ -1,0 +1,102 @@
+import * as React from 'react';
+import {
+  View,
+  TextInput,
+  Platform,
+  type TextInputProps,
+  type NativeSyntheticEvent,
+  type TextInputFocusEventData,
+} from 'react-native';
+import { cn } from '@/lib/utils';
+import { Text } from './text';
+
+interface InputProps extends TextInputProps {
+  label?: string;
+  error?: string;
+  hint?: string;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
+  containerClassName?: string;
+}
+
+const Input = React.forwardRef<TextInput, InputProps>(
+  (
+    {
+      className,
+      containerClassName,
+      label,
+      error,
+      hint,
+      leftIcon,
+      rightIcon,
+      onFocus,
+      onBlur,
+      editable = true,
+      style,
+      ...props
+    },
+    ref,
+  ) => {
+    const [isFocused, setIsFocused] = React.useState(false);
+
+    const handleFocus = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+      setIsFocused(true);
+      onFocus?.(e);
+    };
+
+    const handleBlur = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+      setIsFocused(false);
+      onBlur?.(e);
+    };
+
+    return (
+      <View className={cn('w-full gap-1.5', containerClassName)}>
+        {label && (
+          <Text variant="small" className="font-medium text-foreground">
+            {label}
+          </Text>
+        )}
+        <View
+          className={cn(
+            'flex-row items-center min-h-12 rounded-lg border bg-transparent px-3',
+            isFocused ? 'border-ring' : 'border-input',
+            error && 'border-destructive',
+            !editable && 'opacity-50',
+          )}
+        >
+          {leftIcon && <View className="mr-2">{leftIcon}</View>}
+          <TextInput
+            ref={ref}
+            className={cn(
+              'flex-1 py-2 text-base leading-5 text-foreground placeholder:text-muted-foreground',
+              className,
+            )}
+            style={[
+              Platform.OS === 'android' ? { includeFontPadding: false } : undefined,
+              style,
+            ]}
+            placeholderTextColor="#71717a"
+            editable={editable}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            {...props}
+          />
+          {rightIcon && <View className="ml-2">{rightIcon}</View>}
+        </View>
+        {error && (
+          <Text variant="small" className="text-destructive">
+            {error}
+          </Text>
+        )}
+        {hint && !error && (
+          <Text variant="muted">{hint}</Text>
+        )}
+      </View>
+    );
+  },
+);
+
+Input.displayName = 'Input';
+
+export { Input };
+export type { InputProps };
