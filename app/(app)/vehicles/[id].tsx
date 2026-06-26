@@ -10,14 +10,13 @@ import {
   ArrowLeft,
   Edit,
   Trash2,
-  ChevronUp,
-  ChevronDown,
   Share2,
   BookOpen,
   Gauge,
   MoreVertical,
 } from 'lucide-react-native';
 import { VehiclePhotoGallery } from '@/components/vehicle/VehiclePhotoGallery';
+import { VehicleSpecsPanel } from '@/components/vehicle/VehicleSpecsPanel';
 import { KeyboardSheet } from '@/components/layout/KeyboardSheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/text';
@@ -34,7 +33,6 @@ import { useExpensesStore } from '@/store/useExpensesStore';
 import { useRemindersStore } from '@/store/useRemindersStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useTimeline } from '@/hooks/useTimeline';
-import { FUEL_TYPE_LABELS, TRANSMISSION_LABELS } from '@/constants/domain';
 import { buildVehicleExportHtml, shareVehicleExport } from '@/lib/exportVehicleHistory';
 import {
   getManualMenuLabel,
@@ -56,7 +54,6 @@ export default function VehicleDetailScreen() {
   const { expenses, fetchExpenses } = useExpensesStore();
   const { reminders, fetchReminders } = useRemindersStore();
 
-  const [specsOpen, setSpecsOpen] = React.useState(false);
   const [actionsOpen, setActionsOpen] = React.useState(false);
   const [kmDialogOpen, setKmDialogOpen] = React.useState(false);
   const [manualDialogOpen, setManualDialogOpen] = React.useState(false);
@@ -332,40 +329,7 @@ export default function VehicleDetailScreen() {
           )}
         </View>
 
-        <View className="rounded-xl border border-border bg-card overflow-hidden">
-          <Pressable
-            onPress={() => setSpecsOpen((v) => !v)}
-            className="flex-row items-center justify-between p-4"
-            accessibilityLabel="Ficha técnica"
-          >
-            <Text variant="h3">Ficha técnica</Text>
-            {specsOpen ? (
-              <ChevronUp size={20} color="#71717a" />
-            ) : (
-              <ChevronDown size={20} color="#71717a" />
-            )}
-          </Pressable>
-          {specsOpen && (
-            <View className="border-t border-border px-4 pb-4 gap-2">
-              <SpecRow label="Año" value={String(vehicle.year)} />
-              <SpecRow label="Combustible" value={FUEL_TYPE_LABELS[vehicle.fuelType]} />
-              {vehicle.engine && <SpecRow label="Motor" value={vehicle.engine} />}
-              {vehicle.transmission && (
-                <SpecRow label="Transmisión" value={TRANSMISSION_LABELS[vehicle.transmission]} />
-              )}
-              {vehicle.vin && <SpecRow label="VIN" value={vehicle.vin} />}
-              {vehicle.color && <SpecRow label="Color" value={vehicle.color} />}
-              {vehicle.notes && (
-                <View className="mt-2 gap-1">
-                  <Text variant="muted" className="text-xs">
-                    Notas
-                  </Text>
-                  <Text className="text-sm">{vehicle.notes}</Text>
-                </View>
-              )}
-            </View>
-          )}
-        </View>
+        <VehicleSpecsPanel vehicle={vehicle} />
       </ScrollView>
 
       <Dialog open={kmDialogOpen} onOpenChange={setKmDialogOpen}>
@@ -473,16 +437,5 @@ function ActionSheetRow({
         {label}
       </Text>
     </Pressable>
-  );
-}
-
-function SpecRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="flex-row justify-between py-1.5 border-b border-border/40">
-      <Text variant="muted" className="text-sm">
-        {label}
-      </Text>
-      <Text className="text-sm font-medium">{value}</Text>
-    </View>
   );
 }
