@@ -1,23 +1,23 @@
 import * as React from 'react';
 import { View, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
-import { Plus } from 'lucide-react-native';
 import { Screen } from '@/components/layout/Screen';
 import { Text } from '@/components/ui/text';
-import { Button } from '@/components/ui/button';
-import { VehicleCard } from '@/components/ui/vehicle-card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { AddVehicleCard, VehicleSummaryCard } from '@/components/vehicle/VehicleSummaryCard';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useActiveVehicle } from '@/hooks/useActiveVehicle';
 import { useVehiclesStore } from '@/store/useVehiclesStore';
 
 export default function VehiclesListScreen() {
   const { user } = useAuthStore();
   const { vehicles, isLoading, fetchVehicles } = useVehiclesStore();
+  const { activeVehicle, setActiveVehicle } = useActiveVehicle();
   const [refreshing, setRefreshing] = React.useState(false);
 
   React.useEffect(() => {
     if (user) fetchVehicles(user.id);
-  }, [user]);
+  }, [user, fetchVehicles]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -25,43 +25,45 @@ export default function VehiclesListScreen() {
     setRefreshing(false);
   };
 
+  const openVehicle = async (vehicleId: string) => {
+    const vehicle = vehicles.find((v) => v.id === vehicleId);
+    if (vehicle) await setActiveVehicle(vehicle);
+    router.push(`/(app)/vehicles/${vehicleId}`);
+  };
+
   return (
-    <Screen
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-    >
-      <View className="flex-row items-center justify-between">
-        <Text variant="h1">Mis vehículos</Text>
-        <Button
-          size="sm"
-          onPress={() => router.push('/(app)/vehicles/new')}
-          className="gap-1"
-        >
-          <Plus size={16} color="white" />
-          Nuevo
-        </Button>
+    <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <View className="gap-1 mb-4">
+        <Text variant="h1">Vehículos</Text>
+        <Text variant="muted" className="text-sm">
+          {vehicles.length === 0
+            ? 'Agregá tu primer auto para empezar'
+            : `${vehicles.length} ${vehicles.length === 1 ? 'vehículo' : 'vehículos'}`}
+        </Text>
       </View>
 
       {vehicles.length === 0 && !isLoading ? (
-        <EmptyState
-          brandIcon
-          title="Sin vehículos"
-          description="Agregá tu primer vehículo para comenzar a registrar servicios y gastos"
-          actionLabel="Agregar vehículo"
-          onAction={() => router.push('/(app)/vehicles/new')}
-        />
+        <View className="gap-4">
+          <EmptyState
+            brandIcon
+            title="Sin vehículos"
+            description="Centralizá services, recordatorios y comprobantes por auto"
+          />
+          <AddVehicleCard onPress={() => router.push('/(app)/vehicles/new')} />
+        </View>
       ) : (
         <View className="gap-3">
           {vehicles.map((vehicle) => (
-            <VehicleCard
+            <VehicleSummaryCard
               key={vehicle.id}
               vehicle={vehicle}
-              onPress={() => {
-                router.push(`/(app)/vehicles/${vehicle.id}`);
-              }}
+              showPhoto
+              showActiveBadge
+              isActive={activeVehicle?.id === vehicle.id}
+              onPress={() => openVehicle(vehicle.id)}
             />
           ))}
+          <AddVehicleCard onPress={() => router.push('/(app)/vehicles/new')} />
         </View>
       )}
     </Screen>

@@ -1,10 +1,11 @@
 import * as React from 'react';
 import { View, Pressable } from 'react-native';
 import { router } from 'expo-router';
-import { ChevronRight, ChevronDown } from 'lucide-react-native';
+import { ChevronRight } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
+import { KeyboardSheet } from '@/components/layout/KeyboardSheet';
+import { AddVehicleCard, VehicleSummaryCard } from '@/components/vehicle/VehicleSummaryCard';
 import { useActiveVehicle } from '@/hooks/useActiveVehicle';
-import { formatGroupedInteger } from '@/lib/numberFormat';
 import { cn } from '@/lib/utils';
 import type { Vehicle } from '@/types';
 
@@ -16,102 +17,87 @@ interface VehicleIdentityHeaderProps {
 function VehicleIdentityHeader({ vehicle: vehicleProp, className }: VehicleIdentityHeaderProps) {
   const { vehicles, activeVehicle, setActiveVehicle } = useActiveVehicle();
   const vehicle = vehicleProp ?? activeVehicle;
-  const [open, setOpen] = React.useState(false);
+  const [sheetOpen, setSheetOpen] = React.useState(false);
 
   if (!vehicle) return null;
 
   const multi = vehicles.length > 1;
-  const subtitle = [
-    vehicle.year,
-    `${formatGroupedInteger(vehicle.mileage)} km`,
-    vehicle.licensePlate,
-  ]
-    .filter(Boolean)
-    .join(' · ');
 
   const goDetail = () => {
-    setOpen(false);
     router.push(`/(app)/vehicles/${vehicle.id}`);
   };
 
   const selectVehicle = async (v: Vehicle) => {
     await setActiveVehicle(v);
-    setOpen(false);
+    setSheetOpen(false);
   };
 
   return (
-    <View className={cn('relative z-20', className)}>
-      <View className="flex-row items-center rounded-2xl border border-border bg-card pl-4 pr-2 py-3">
+    <View className={cn('gap-2', className)}>
+      <VehicleSummaryCard vehicle={vehicle} showPhoto onPress={goDetail} isActive showChevron />
+
+      {multi ? (
         <Pressable
-          onPress={goDetail}
-          className="flex-1 gap-0.5 active:opacity-80"
+          onPress={() => setSheetOpen(true)}
+          className="flex-row items-center justify-center gap-1 py-1 active:opacity-70"
           accessibilityRole="button"
-          accessibilityLabel={`${vehicle.make} ${vehicle.model}, ver detalle`}
+          accessibilityLabel="Cambiar vehículo"
         >
-          <Text className="text-lg font-bold text-foreground">
-            {vehicle.make} {vehicle.model}
+          <Text className="text-sm font-medium text-primary">
+            Cambiar vehículo
           </Text>
           <Text variant="muted" className="text-sm">
-            {subtitle}
+            · {vehicles.length} en total
           </Text>
         </Pressable>
-
-        {multi ? (
-          <Pressable
-            onPress={() => setOpen((v) => !v)}
-            className="h-10 w-10 items-center justify-center rounded-lg bg-muted active:opacity-80"
-            accessibilityRole="button"
-            accessibilityLabel="Cambiar vehículo"
-          >
-            <ChevronDown size={20} color="#71717a" />
-          </Pressable>
-        ) : (
-          <Pressable
-            onPress={goDetail}
-            className="h-10 w-10 items-center justify-center active:opacity-80"
-            accessibilityLabel="Ver detalle del vehículo"
-          >
-            <ChevronRight size={20} color="#71717a" />
-          </Pressable>
-        )}
-      </View>
-
-      {open && multi && (
-        <View className="absolute top-full left-0 right-0 mt-1 rounded-xl border border-border bg-card shadow-lg overflow-hidden z-30">
-            {vehicles.map((v) => (
-              <Pressable
-                key={v.id}
-                onPress={() => selectVehicle(v)}
-                className={cn(
-                  'px-4 py-3 border-b border-border last:border-b-0 active:opacity-80',
-                  v.id === vehicle.id && 'bg-primary/5',
-                )}
-              >
-                <Text
-                  className={cn(
-                    'text-sm font-medium',
-                    v.id === vehicle.id ? 'text-primary' : 'text-foreground',
-                  )}
-                >
-                  {v.make} {v.model} ({v.year})
-                </Text>
-                <Text variant="muted" className="text-xs mt-0.5">
-                  {formatGroupedInteger(v.mileage)} km
-                  {v.licensePlate ? ` · ${v.licensePlate}` : ''}
-                </Text>
-              </Pressable>
-            ))}
-            <Pressable
-              onPress={() => {
-                setOpen(false);
-                router.push('/(app)/vehicles/new');
-              }}
-              className="px-4 py-3 bg-muted/50 active:opacity-80"
-            >
-              <Text className="text-sm font-medium text-primary">+ Agregar vehículo</Text>
-            </Pressable>
-        </View>
+      ) : (
+        <Pressable
+          onPress={() => router.push('/(app)/vehicles/new')}
+          className="self-center py-1 active:opacity-70"
+        >
+          <Text className="text-sm font-medium text-primary">+ Agregar otro vehículo</Text>
+        </Pressable>
       )}
+
+      <KeyboardSheet visible={sheetOpen} onClose={() => setSheetOpen(false)}>
+        <Text variant="h3" className="mb-1">
+          Elegí un vehículo
+        </Text>
+        <Text variant="muted" className="text-sm mb-4">
+          El tablero muestra datos del auto seleccionado
+        </Text>
+
+        <View className="gap-2">
+          {vehicles.map((v) => (
+            <VehicleSummaryCard
+              key={v.id}
+              vehicle={v}
+              showPhoto
+              showActiveBadge
+              showChevron={false}
+              isActive={v.id === vehicle.id}
+              onPress={() => selectVehicle(v)}
+            />
+          ))}
+          <AddVehicleCard
+            onPress={() => {
+              setSheetOpen(false);
+              router.push('/(app)/vehicles/new');
+            }}
+          />
+        </View>
+
+        <Pressable
+          onPress={() => {
+            setSheetOpen(false);
+            router.push('/(app)/vehicles');
+          }}
+          className="flex-row items-center justify-center gap-1 mt-4 py-2 active:opacity-70"
+        >
+          <Text className="text-sm font-medium text-primary">Gestionar vehículos</Text>
+          <ChevronRight size={16} color="#18181b" />
+        </Pressable>
+      </KeyboardSheet>
     </View>
   );
 }
